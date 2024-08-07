@@ -1,5 +1,7 @@
 const multer = require('multer');
 const path = require('path');
+const multerS3 = require('multer-s3');
+const s3 = require('./s3');
 
 // Set storage engine
 const storage = multer.diskStorage({
@@ -9,14 +11,16 @@ const storage = multer.diskStorage({
     },
 });
 
-// Initialize upload
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 3000000 }, // 1MB file size limit
-    fileFilter: (req, file, cb) => {
-        checkFileType(file, cb);
-    },
-}).single('image'); // 'image' is the name of the form field
+
+// const upload = multer({
+//     storage: storage,
+//     limits: { fileSize: 3000000 }, 
+//     fileFilter: (req, file, cb) => {
+//         checkFileType(file, cb);
+//     },
+// }).single('image'); 
+
+
 
 // Check file type
 function checkFileType(file, cb) {
@@ -30,5 +34,23 @@ function checkFileType(file, cb) {
         cb('Error: Images Only!');
     }
 }
+
+
+// Initialize upload
+const upload = multer({
+    storage: multerS3({
+        s3: s3,
+        bucket: process.env.AWS_STORAGE_BUCKET_NAME,
+        limits: { fileSize: 3000000 }, // 3MB file size limit
+        key: (req, file, cb) => {
+            cb(null, Date.now().toString() + '-' + file.originalname);
+        },
+
+    }),
+    limits: { fileSize: 3000000 },
+    fileFilter: (req, file, cb) => {
+        checkFileType(file, cb);
+    },
+}).single('image');
 
 module.exports = upload;

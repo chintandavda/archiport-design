@@ -21,6 +21,8 @@ router.get('/', async (req, res) => {
 
 // Create a new design (requires authentication)
 router.post('/', auth, upload, async (req, res) => {
+    console.log('here');
+
     try {
         console.log('File:', req.file); // Log the file details
         console.log('Body:', req.body);

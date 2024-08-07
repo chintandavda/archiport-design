@@ -1,3 +1,4 @@
+require('dotenv').config();
 const bodyParser = require('body-parser');
 const express = require('express');
 const cors = require("cors");
@@ -16,6 +17,12 @@ app.use(cors());
 
 // Middleware to serve static files from the "uploads" directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Log incoming requests
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.path}`);
+    next();
+});
 
 // Routes
 app.use('/designs', designRoutes);
