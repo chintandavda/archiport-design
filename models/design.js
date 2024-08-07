@@ -12,3 +12,4 @@ const DesignSchema = new Schema({
 }, { timestamps: true });
 
 module.exports = mongoose.model('Design', DesignSchema);
+

@@ -25,6 +25,9 @@ const connectDB = async () => {
       tlsAllowInvalidCertificates: true, // Try setting this to true if you encounter SSL issues
     });
     console.log('MongoDB connected');
+
+    const count = await mongoose.connection.db.collection('designs').countDocuments();
+    console.log('Number of designs:', count);
   } catch (error) {
     console.error('Error connecting to MongoDB', error);
     process.exit(1);

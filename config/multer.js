@@ -3,14 +3,6 @@ const path = require('path');
 const multerS3 = require('multer-s3');
 const s3 = require('./s3');
 
-// Set storage engine
-const storage = multer.diskStorage({
-    destination: './uploads/', // Folder to store images
-    filename: (req, file, cb) => {
-        cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
-    },
-});
-
 
 // const upload = multer({
 //     storage: storage,
@@ -19,7 +11,6 @@ const storage = multer.diskStorage({
 //         checkFileType(file, cb);
 //     },
 // }).single('image'); 
-
 
 
 // Check file type
@@ -35,17 +26,17 @@ function checkFileType(file, cb) {
     }
 }
 
-
 // Initialize upload
 const upload = multer({
     storage: multerS3({
         s3: s3,
         bucket: process.env.AWS_STORAGE_BUCKET_NAME,
-        limits: { fileSize: 3000000 }, // 3MB file size limit
         key: (req, file, cb) => {
-            cb(null, Date.now().toString() + '-' + file.originalname);
+            const folderName = 'design_uploads'; // Name of the folder where files will be uploaded
+            const fileName = Date.now().toString() + '-' + file.originalname;
+            const fullPath = `${folderName}/${fileName}`;
+            cb(null, fullPath);
         },
-
     }),
     limits: { fileSize: 3000000 },
     fileFilter: (req, file, cb) => {

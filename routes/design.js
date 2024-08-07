@@ -21,8 +21,6 @@ router.get('/', async (req, res) => {
 
 // Create a new design (requires authentication)
 router.post('/', auth, upload, async (req, res) => {
-    console.log('here');
-
     try {
         console.log('File:', req.file); // Log the file details
         console.log('Body:', req.body);
@@ -30,14 +28,15 @@ router.post('/', auth, upload, async (req, res) => {
         const userId = req.user.user_id;
         const userDetails = await getUserDetails(userId);
 
-        console.log("user id" + userDetails);
+        console.log("user id " + userDetails.username);
         if (!req.file) {
             return res.status(400).send('Image file is required');
         }
 
+        console.log("creating design object ");
         const design = new Design({
             username: userDetails.username,
-            image: req.file.path, // Use the path of the uploaded file
+            image: req.file.location, // Use the path of the uploaded file
             caption: req.body.caption,
             location: req.body.location || 'Mumbai', // Default value for location
             likeCount: 0,
@@ -45,10 +44,12 @@ router.post('/', auth, upload, async (req, res) => {
             viewCount: 0,
         });
 
+        console.log("Saving design object...");
         await design.save();
-        console.log(design);
+        console.log("my design " + design);
         res.send(design);
     } catch (error) {
+        console.error('Error while saving design:', error);
         res.status(500).send(error.message);
     }
 });
