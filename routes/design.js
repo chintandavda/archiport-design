@@ -62,6 +62,7 @@ router.get('/public-designs', async (req, res) => {
     try {
         // Fetch all designs, sorted by createdAt in descending order
         const designs = await Design.find().sort({ createdAt: -1 });
+        console.log("Chintannnnnnnnnnnnn doingggggggggggggg");
 
         // Fetch user details for each design
         const designsWithUserDetails = await Promise.all(designs.map(async (design) => {
