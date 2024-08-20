@@ -3,7 +3,7 @@ services:
         build: .
         env_file: .env
         ports:
-            - '3001:3001'
+            - '80:3001' # Map port 80 on the host to port 3001 in the container
         environment:
             - NODE_ENV=production
         command: ['node', 'server.js']

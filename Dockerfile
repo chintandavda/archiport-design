@@ -1,23 +1,20 @@
-# Use an official Node.js runtime as a parent image
+# Use a smaller Node.js image
 FROM node:20-alpine
 
 # Set working directory inside the container
 WORKDIR /usr/src/app
 
-# Copy package.json and package-lock.json to the container
+# Copy package.json and package-lock.json
 COPY package*.json ./
 
 # Install only production dependencies
 RUN npm install --production
 
-# Copy the rest of your application source code to the container
+# Copy the rest of the application
 COPY . .
 
-# Expose port 80
-EXPOSE 80
-
-# Set environment variable to tell Node.js app to use port 80
-ENV PORT=80
+# Expose port 3001 (internal) that the app is running on
+EXPOSE 3001
 
 # Start the application
 CMD ["npm", "start"]
