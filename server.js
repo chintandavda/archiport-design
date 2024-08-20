@@ -28,10 +28,8 @@ app.get('/health', (req, res) => {
     res.status(200).send('OK');
 });
 
-
 // Routes
 app.use('/designs', designRoutes);
-
 
 // start the server
 const PORT = process.env.PORT || 3001;
