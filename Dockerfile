@@ -17,10 +17,10 @@ RUN npm install --production
 COPY . .
 
 # Expose the port Elastic Beanstalk will route traffic to
-EXPOSE 8080
+EXPOSE 80
 
 # Define environment variable for the port (Elastic Beanstalk sets this)
-ENV PORT 8080
+ENV PORT 80
 
 # Start the application
 CMD ["npm", "start"]
