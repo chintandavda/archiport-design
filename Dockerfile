@@ -14,7 +14,7 @@ RUN npm install --production
 COPY . .
 
 # Build the application if required (e.g., for React or Next.js)
-# RUN npm run build
+RUN npm run build
 
 # Step 2: Setup Nginx to serve the app
 FROM nginx:alpine
