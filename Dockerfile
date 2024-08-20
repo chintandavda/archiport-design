@@ -1,29 +1,23 @@
-# Step 1: Build the Node.js app
-FROM node:20-alpine AS build
+# Use an official Node.js runtime as a parent image
+FROM node:20-alpine
 
-# Set working directory
+# Set working directory inside the container
 WORKDIR /usr/src/app
 
 # Copy package.json and package-lock.json to the container
 COPY package*.json ./
 
-# Install dependencies
+# Install only production dependencies
 RUN npm install --production
 
-# Copy the rest of your application code to the container
+# Copy the rest of your application source code to the container
 COPY . .
 
-# Build the application if required (e.g., for React or Next.js)
-RUN npm run build
-
-# Step 2: Setup Nginx to serve the app
-FROM nginx:alpine
-
-# Copy built Node.js app from the previous stage
-COPY --from=build /usr/src/app/build /usr/share/nginx/html
-
-# Expose the port Nginx will run on
+# Expose port 80
 EXPOSE 80
 
-# Start Nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Set environment variable to tell Node.js app to use port 80
+ENV PORT=80
+
+# Start the application
+CMD ["npm", "start"]
