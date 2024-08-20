@@ -19,12 +19,6 @@ COPY . .
 # Step 2: Setup Nginx to serve the app
 FROM nginx:alpine
 
-# Copy the Nginx configuration file
-COPY nginx.conf /etc/nginx/nginx.conf
-
-# Remove the default Nginx website
-RUN rm -rf /usr/share/nginx/html/*
-
 # Copy built Node.js app from the previous stage
 COPY --from=build /usr/src/app/build /usr/share/nginx/html
 
