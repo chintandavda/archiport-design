@@ -1,20 +1,26 @@
-# Use a smaller Node.js image
+# Use the official Node.js image as the base image
 FROM node:20-alpine
 
-# Set working directory inside the container
-WORKDIR /usr/src/app
+# Set NODE_ENV to production
+ENV NODE_ENV=production
 
-# Copy package.json and package-lock.json
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy the package.json and package-lock.json files to the container
 COPY package*.json ./
 
-# Install only production dependencies
+# Install the dependencies
 RUN npm install --production
 
-# Copy the rest of the application
+# Copy the rest of the application code to the container
 COPY . .
 
-# Expose port 3001 (internal) that the app is running on
-EXPOSE 80
+# Expose the port Elastic Beanstalk will route traffic to
+EXPOSE 8080
+
+# Define environment variable for the port (Elastic Beanstalk sets this)
+ENV PORT 8080
 
 # Start the application
 CMD ["npm", "start"]
