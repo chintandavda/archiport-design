@@ -3,12 +3,13 @@ services:
         build:
             context: .
             args:
-                NODE_ENV: development
+                NODE_ENV: production
         env_file: .env
         ports:
-            - '3001:3001'
+            - '80:3001'
         volumes:
+            - /usr/src/app/node_modules
             - .:/usr/src/app
         environment:
-            - NODE_ENV=development
+            - NODE_ENV=production
         command: ['npm', 'start']

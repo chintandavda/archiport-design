@@ -1,9 +1,6 @@
 # Use the official Node.js image as the base image
 FROM node:20-alpine
 
-# Set NODE_ENV to production
-ENV NODE_ENV=production
-
 # Set the working directory in the container
 WORKDIR /app
 
@@ -17,10 +14,7 @@ RUN npm install --production
 COPY . .
 
 # Expose the port Elastic Beanstalk will route traffic to
-EXPOSE 80
-
-# Define environment variable for the port (Elastic Beanstalk sets this)
-ENV PORT 80
+EXPOSE 3001
 
 # Start the application
 CMD ["npm", "start"]
