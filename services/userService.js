@@ -23,4 +23,23 @@ const fetchUserDetailsByUsername = async (username) => {
     }
 };
 
-module.exports = { getUserDetails, fetchUserDetailsByUsername };
+const fetchUserDetailsByUsernames = async (usernames) => {
+    try {
+        const response = await axios.post(`${process.env.API_BASE_URL}/get_user_details_batch/`, { usernames });
+        const userDetailsList = response.data;
+
+        // Create a map of username to user details
+        const userDetailsMap = {};
+        userDetailsList.forEach(user => {
+            userDetailsMap[user.username] = user;
+        });
+
+        return userDetailsMap;
+    } catch (error) {
+        console.error('Error fetching user details in batch:', error);
+        throw error;
+    }
+};
+
+
+module.exports = { getUserDetails, fetchUserDetailsByUsername, fetchUserDetailsByUsernames };

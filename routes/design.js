@@ -3,7 +3,7 @@ const router = express.Router();
 const Design = require('../models/design');
 const Like = require('../models/like');
 const auth = require('../middleware/auth');
-const { getUserDetails, fetchUserDetailsByUsername } = require('../services/userService');
+const { getUserDetails, fetchUserDetailsByUsername, fetchUserDetailsByUsernames } = require('../services/userService');
 const upload = require('../config/multer');
 
 
@@ -12,44 +12,31 @@ router.get('/', auth, async (req, res) => {
         const userId = req.user.user_id;
         const userDetails = await getUserDetails(userId);
 
-        // Fetch all designs
+        // Fetch all designs, sorted by createdAt in descending order
         const designs = await Design.find().sort({ createdAt: -1 });
+
+        // Extract all unique usernames from the designs
+        const usernames = [...new Set(designs.map(design => design.username))].filter(Boolean);
+
+        // Fetch user details for all usernames in a single request
+        const userDetailsMap = await fetchUserDetailsByUsernames(usernames);
 
         // Fetch all the designs liked by the logged-in user
         const likedDesigns = await Like.find({ username: userDetails.username }).select('designId');
         const likedDesignIds = likedDesigns.map(like => like.designId.toString());
 
-        // Map over the designs and check if they are liked by the logged-in user
-        const designsWithUserDetails = await Promise.all(designs.map(async (design) => {
-            try {
-                // Ensure design.username is defined
-                if (!design.username) {
-                    return {
-                        ...design.toObject(),
-                        isLiked: likedDesignIds.includes(design._id.toString()), // Set isLiked even if username is missing
-                    };
-                }
+        // Map over the designs and attach the user details
+        const designsWithUserDetails = designs.map((design) => {
+            const userDetail = userDetailsMap[design.username];
+            const isLiked = likedDesignIds.includes(design._id.toString());
 
-                // Fetch user details from Django using the username in the design
-                const userDetails = await fetchUserDetailsByUsername(design.username);
-
-                // Set the `isLiked` flag based on whether the designId is in likedDesignIds
-                const isLiked = likedDesignIds.includes(design._id.toString());
-
-                return {
-                    ...design.toObject(),
-                    fullName: `${userDetails.first_name} ${userDetails.last_name}`,  // Combine first and last name
-                    userImage: userDetails.profile_image,  // Assuming profile_image comes from Django
-                    isLiked,  // Add the isLiked flag to the design
-                };
-            } catch (error) {
-                console.error('Error fetching user details for design:', error);
-                return {
-                    ...design.toObject(),
-                    isLiked: likedDesignIds.includes(design._id.toString()) // Set isLiked even if user details fetch fails
-                };
-            }
-        }));
+            return {
+                ...design.toObject(),
+                fullName: userDetail ? `${userDetail.first_name} ${userDetail.last_name}` : '',
+                userImage: userDetail ? userDetail.profile_image : null,
+                isLiked
+            };
+        });
 
         res.send(designsWithUserDetails);
     } catch (error) {
@@ -57,33 +44,30 @@ router.get('/', auth, async (req, res) => {
         res.status(500).send(error.message);
     }
 });
+
 
 router.get('/public-designs', async (req, res) => {
     try {
         // Fetch all designs, sorted by createdAt in descending order
         const designs = await Design.find().sort({ createdAt: -1 });
-        console.log("Chintannnnnnnnnnnnn doingggggggggggggg");
 
-        // Fetch user details for each design
-        const designsWithUserDetails = await Promise.all(designs.map(async (design) => {
-            try {
-                // Fetch user details from Django using the username in the design
-                const userDetails = await fetchUserDetailsByUsername(design.username);
+        // Extract all unique usernames from the designs
+        const usernames = [...new Set(designs.map(design => design.username))].filter(Boolean);
 
-                return {
-                    ...design.toObject(),
-                    fullName: `${userDetails.first_name} ${userDetails.last_name}`,  // Combine first and last name
-                    userImage: userDetails.profile_image,  // Assuming profile_image comes from Django
-                    isLiked: false  // Non-authenticated users cannot like, so set to false
-                };
-            } catch (error) {
-                console.error('Error fetching user details for design:', error);
-                return {
-                    ...design.toObject(),
-                    isLiked: false // Set isLiked as false if user details fetch fails
-                };
-            }
-        }));
+        // Fetch user details for all usernames in a single request
+        const userDetailsMap = await fetchUserDetailsByUsernames(usernames);
+
+        // Map over the designs and attach the user details
+        const designsWithUserDetails = designs.map((design) => {
+            const userDetail = userDetailsMap[design.username];
+
+            return {
+                ...design.toObject(),
+                fullName: userDetail ? `${userDetail.first_name} ${userDetail.last_name}` : '',
+                userImage: userDetail ? userDetail.profile_image : null,
+                isLiked: false // Non-authenticated users cannot like, so set to false
+            };
+        });
 
         res.send(designsWithUserDetails);
 
@@ -92,6 +76,7 @@ router.get('/public-designs', async (req, res) => {
         res.status(500).send(error.message);
     }
 });
+
 
 // Get design posts by the logged-in user
 router.get('/my-designs', auth, async (req, res) => {
@@ -148,12 +133,12 @@ router.get('/user/username/:username', auth, async (req, res) => {
         // Fetch designs by username
         const designs = await Design.find({ username }).sort({ createdAt: -1 });
 
+        if (!designs.length) {
+            return res.json([]);
+        }
+
         const likedDesigns = await Like.find({ username: userDetails.username }).select('designId');
         const likedDesignIds = likedDesigns.map(like => like.designId.toString());
-
-        if (!designs.length) {
-            return res.status(404).json({ message: 'No designs found for this user.' });
-        }
 
         // Fetch user details for each design
         const designsWithUserDetails = await Promise.all(
@@ -185,7 +170,6 @@ router.get('/user/username/:username', auth, async (req, res) => {
     }
 });
 
-module.exports = router;
 
 // Create a new design (requires authentication)
 router.post('/', auth, upload, async (req, res) => {
@@ -259,6 +243,49 @@ router.delete('/:id', auth, async (req, res) => {
         res.send({ message: 'Post Deleted' });
     } catch (error) {
         console.error('Failed to delete the post:', error);
+        res.status(500).send('Server error');
+    }
+});
+
+
+// Delete post while deleting the user
+router.delete('/user/:username', async (req, res) => {
+    try {
+        const username = req.params.username;
+
+        // Step 1: Find all designs by the user and delete them
+        const userDesigns = await Design.find({ username: username });
+        const designIds = userDesigns.map((design) => design._id);
+
+        if (designIds.length > 0) {
+            // Delete all likes associated with the user's designs
+            await Like.deleteMany({ designId: { $in: designIds } });
+
+            // Delete the user's designs
+            await Design.deleteMany({ _id: { $in: designIds } });
+
+            console.log(`User's designs and associated likes deleted for username: ${username}`);
+        }
+
+        // Step 2: Find all likes made by the user on other designs and decrement their likeCount
+        const userLikes = await Like.find({ username: username });
+        const likedDesignIds = userLikes.map((like) => like.designId);
+
+        if (likedDesignIds.length > 0) {
+            // Decrement the likeCount for each design that the user liked
+            await Design.updateMany(
+                { _id: { $in: likedDesignIds } },
+                { $inc: { likeCount: -1 } }
+            );
+
+            // Delete all likes made by the user on other designs
+            await Like.deleteMany({ username: username });
+
+            console.log(`User's likes deleted and likeCounts decremented for username: ${username}`);
+        }
+        res.send({ message: 'User designs and associated likes deleted successfully' });
+    } catch (error) {
+        console.error('Failed to delete the designs and likes:', error);
         res.status(500).send('Server error');
     }
 });
