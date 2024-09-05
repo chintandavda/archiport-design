@@ -85,7 +85,7 @@ router.get('/my-designs', auth, async (req, res) => {
         const userDetails = await getUserDetails(userId);
 
         // Fetch all designs by the logged-in user
-        const designs = await Design.find({ username: userDetails.username });
+        const designs = await Design.find({ username: userDetails.username }).sort({ createdAt: -1 });
 
         // Fetch all the designs liked by the logged-in user
         const likedDesigns = await Like.find({ username: userDetails.username }).select('designId');
